@@ -1929,6 +1929,9 @@ void RenderLanOnline(WidgetInfo&) {
     const int state = np_state();
     const bool idle = (state == NP_IDLE || state == NP_FAILED);
 
+    if (np_last_abort_age_ms() >= 0) {
+        ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.4f, 1.0f), "Last online match ended: %s", np_last_abort_reason());
+    }
     ImGui::TextWrapped("Play with friends over a LAN or a VPN (Radmin, Hamachi, ZeroTier or Tailscale; phones and PCs can play together). Everybody must run the exact same "
                        "build with the same settings. The host shares its IP and the UDP port opened in the firewall.");
 
@@ -2198,6 +2201,7 @@ void RenderNetDebug(WidgetInfo&) {
     ImGui::Text("Room cheats (match): 0x%02X   (host setting: 0x%02X)", np_match_cheats(), np_get_room_cheats());
     ImGui::Text("Forced stage: %d  (-1 = stage select, -2 = random)", np_get_stage());
     ImGui::Text("Settings hash: %08X", np_settings_hash());
+    ImGui::Text("Last match ended: %s", np_last_abort_age_ms() >= 0 ? np_last_abort_reason() : "(none)");
     ImGui::TextDisabled("The settings hash must be identical on every peer.");
 }
 } // namespace
@@ -2493,9 +2497,30 @@ extern "C" void portNetplayReportNameTag(int player, float centerX, float topY) 
     sNameTags[player] = { centerX, topY, std::chrono::steady_clock::now(), true };
 }
 
+// Shows why an online match ended (desync, lost connection, load timeout, ...) for ~15 seconds,
+// even though the game has already gone back to the main menu.
+static void DrawNetplayNotice() {
+    const int age = np_last_abort_age_ms();
+    if (age < 0 || age > 15000) return;
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(vp->Pos.x + vp->Size.x * 0.5f, vp->Pos.y + 14.0f), ImGuiCond_Always, ImVec2(0.5f, 0.0f));
+    ImGui::SetNextWindowBgAlpha(0.85f);
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+                                   ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+                                   ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs;
+    if (ImGui::Begin("##NetplayNotice", nullptr, flags)) {
+        ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.4f, 1.0f), "Online match ended");
+        ImGui::PushTextWrapPos(vp->Size.x * 0.8f);
+        ImGui::TextUnformatted(np_last_abort_reason());
+        ImGui::PopTextWrapPos();
+    }
+    ImGui::End();
+}
+
 void PortMenu::Draw() {
     Ship::Menu::Draw();
     DrawNetplayNameTags();
+    DrawNetplayNotice();
 }
 
 void PortMenu::DrawElement() {

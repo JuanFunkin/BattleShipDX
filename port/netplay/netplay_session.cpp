@@ -53,7 +53,7 @@ constexpr uint64_t kRosterEveryMs = 500;
 constexpr uint64_t kChoiceEveryMs = 500;
 constexpr uint64_t kResendEveryMs = 150;
 constexpr uint64_t kLobbyTimeoutMs = 10000;
-constexpr uint64_t kLoadTimeoutMs = 25000;
+constexpr uint64_t kLoadTimeoutMs = 60000; // phones can take a while to load a stage
 constexpr uint64_t kMatchTimeoutMs = 8000;
 constexpr uint64_t kLingerMs = 2000;
 
@@ -134,6 +134,7 @@ struct Session::Impl {
     bool pendingCfg = false;
     std::vector<uint8_t> blob;    // config blob (host: to send, client: pending)
     uint8_t cfgMask = 0, cfgDelay = 5, cfgCheats = 0;
+    uint32_t cfgSettings = 0;
     bool aborted = false;
     std::string abortReason;
     uint32_t rng = 12345;
@@ -251,7 +252,7 @@ void Session::Stop() {
     for (auto& p : d->peers) p = Peer();
     for (auto& r : d->rings) r.clear();
     for (auto& r : mRoster) r = RosterEntry();
-    mState = State::Idle; mSlot = 0; mMatchActive = false; mReleased = false; mMatchMask = 0; mMatchCheats = 0; mRoomCheats = 0;
+    mState = State::Idle; mSlot = 0; mMatchActive = false; mReleased = false; mMatchMask = 0; mMatchCheats = 0; mRoomCheats = 0; mSettingsValid = false;
     d->pendingCfg = false; d->aborted = false; d->lingerUntil = 0; d->localReady = false;
     mStatus = "Idle";
 }
@@ -290,8 +291,8 @@ bool Session::HostBeginMatch(const void* blob, int size) {
     if (mask == 1) return false;
     d->matchId++;
     d->blob.assign((const uint8_t*)blob, (const uint8_t*)blob + size);
-    d->cfgMask = (uint8_t)mask; d->cfgDelay = (uint8_t)mDelay; d->cfgCheats = (uint8_t)mRoomCheats;
-    mMatchMask = mask; mMatchDelay = mDelay; mMatchCheats = mRoomCheats;
+    d->cfgMask = (uint8_t)mask; d->cfgDelay = (uint8_t)mDelay; d->cfgCheats = (uint8_t)mRoomCheats; d->cfgSettings = mRoomSettings;
+    mMatchMask = mask; mMatchDelay = mDelay; mMatchCheats = mRoomCheats; mMatchSettings = mRoomSettings; mSettingsValid = true;
     for (auto& r : d->rings) r.clear();
     for (int s = 1; s < kMaxSlots; s++) { d->peers[s].configAcked = false; d->peers[s].ready = false; for (auto& a : d->peers[s].ack) a = 0; d->peers[s].lastConfigSend = 0; }
     d->localReady = false; mReleased = false; d->releasedAt = 0; d->startSentUntil = 0;
@@ -308,7 +309,7 @@ int Session::ClientTakeMatch(void* out, int cap) {
     memcpy(out, d->blob.data(), d->blob.size());
     for (auto& r : d->rings) r.clear();
     for (auto& a : d->hostAck) a = 0;
-    mMatchMask = d->cfgMask; mMatchDelay = d->cfgDelay; mMatchCheats = d->cfgCheats;
+    mMatchMask = d->cfgMask; mMatchDelay = d->cfgDelay; mMatchCheats = d->cfgCheats; mMatchSettings = d->cfgSettings; mSettingsValid = true;
     d->consumedId = d->matchId;
     d->localReady = false; mReleased = false;
     d->matchStart = nowMs(); d->lingerUntil = 0; d->aborted = false;
@@ -321,7 +322,7 @@ void Session::Ready() { d->localReady = true; }
 
 void Session::EndMatch() {
     if (!mMatchActive) return;
-    mMatchActive = false; mMatchCheats = 0;
+    mMatchActive = false; mMatchCheats = 0; mSettingsValid = false;
     d->lingerUntil = nowMs() + kLingerMs;
     d->localReady = false;
     if (mState == State::Hosting) mStatus = "Hosting. Waiting for players...";
@@ -495,12 +496,12 @@ void Session::Poll() {
                 }
                 if (!r.bad) for (int s = 0; s < kMaxSlots; s++) { if (s == mSlot) { tmp[s].fighter = d->myFighter; tmp[s].costume = d->myCostume; } mRoster[s] = tmp[s]; }
             } else if (type == T_CONFIG && mState == State::Connected) {
-                uint32_t id = r.u32(); int mask = r.u8(); int dl = r.u8(); int ch = r.u8(); int len = r.u16();
+                uint32_t id = r.u32(); int mask = r.u8(); int dl = r.u8(); int ch = r.u8(); uint32_t st = r.u32(); int len = r.u16();
                 if (!r.bad && len > 0 && len <= kMaxBlob) {
                     std::vector<uint8_t> b(len); r.bytes(b.data(), len);
                     if (!r.bad) {
                         if (id != d->consumedId && !mMatchActive && !(d->pendingCfg && id == d->matchId)) {
-                            d->matchId = id; d->blob = b; d->cfgMask = (uint8_t)mask; d->cfgDelay = (uint8_t)dl; d->cfgCheats = (uint8_t)ch; d->pendingCfg = true;
+                            d->matchId = id; d->blob = b; d->cfgMask = (uint8_t)mask; d->cfgDelay = (uint8_t)dl; d->cfgCheats = (uint8_t)ch; d->cfgSettings = st; d->pendingCfg = true;
                         }
                         Writer w; header(w, T_CONFIG_ACK, mSlot); w.u32(id);
                         sendRaw(this, d->sock, d->hostAddr, w, packetsSent);
@@ -603,7 +604,7 @@ void Session::Poll() {
             if (!p.used || !(mMatchMask & (1 << s)) || p.configAcked) continue;
             if (now - p.lastConfigSend < kResendEveryMs) continue;
             p.lastConfigSend = now;
-            Writer w; header(w, T_CONFIG, 0); w.u32(d->matchId); w.u8(d->cfgMask); w.u8(d->cfgDelay); w.u8(d->cfgCheats); w.u16((uint32_t)d->blob.size());
+            Writer w; header(w, T_CONFIG, 0); w.u32(d->matchId); w.u8(d->cfgMask); w.u8(d->cfgDelay); w.u8(d->cfgCheats); w.u32(d->cfgSettings); w.u16((uint32_t)d->blob.size());
             w.bytes(d->blob.data(), d->blob.size());
             sendRaw(this, d->sock, p.addr, w, packetsSent);
         }

@@ -86,6 +86,9 @@ class Session {
     void SetRoomCheats(int m) { mRoomCheats = m & 0xFF; }   // host: cheats applied to everybody in the next match
     int RoomCheats() const { return mRoomCheats; }
     int MatchCheats() const { return mMatchActive ? mMatchCheats : 0; }
+    void SetRoomSettings(uint32_t bits) { mRoomSettings = bits; }       // host: its simulation-affecting settings
+    bool SettingsActive() const { return mMatchActive && mSettingsValid; }
+    uint32_t MatchSettings() const { return mMatchSettings; }
     void Ready();                   // local side finished loading
     bool StartReleased() const { return mReleased; }
     void EndMatch();                // keeps relaying inputs briefly
@@ -122,6 +125,9 @@ class Session {
     int mMatchDelay = 5;
     int mRoomCheats = 0;
     int mMatchCheats = 0;
+    uint32_t mRoomSettings = 0;
+    uint32_t mMatchSettings = 0;
+    bool mSettingsValid = false;
     bool mReleased = false;
 };
 

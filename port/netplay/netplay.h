@@ -61,6 +61,9 @@ uint32_t np_settings_hash(void); /* fingerprint of the port settings that change
 void np_submit_sync(uint32_t tick, uint32_t hash); /* desync detection: both sides hash the game state every 30 ticks */
 int np_consume_abort(void);                  /* 1 once after an abort */
 const char *np_abort_reason(void);
+const char *np_last_abort_reason(void);  /* why the last online match ended (kept for the on-screen notice) */
+int np_last_abort_age_ms(void);          /* ms since then, or -1 if none */
+int np_setting_override(int bit, int local); /* host's value of a simulation setting while an online match runs, else `local` */
 
 void np_put_input(int slot, uint32_t tick, uint16_t buttons, int8_t sx, int8_t sy);
 int np_get_input(int slot, uint32_t tick, uint16_t *buttons, int8_t *sx, int8_t *sy);

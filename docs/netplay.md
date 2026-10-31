@@ -122,4 +122,23 @@ Replace any BGM with an MP3/OGG/WAV: put `music/<bgmId>.mp3` (or `.ogg`/`.wav`) 
 
 ## New-release notice (update 15)
 
-On startup the port asks `https://api.github.com/repos/JuanFunkin/BattleShipDX/releases/latest` (curl, background thread, once per session). If the tag is newer than `BATTLESHIPDX_VERSION` (`port/enhancements/Updater.cpp`, default `v1.0.0`), the menu shows a clickable message at the top right that opens `https://github.com/JuanFunkin/BattleShipDX/releases`. Drafts and pre-releases are ignored by GitHub's `latest` endpoint. Not built on Android/UWP.
+On startup the port asks `https://api.github.com/repos/JuanFunkin/BattleShipDX/releases/latest` (curl, background thread, once per session). If the tag is newer than `BATTLESHIPDX_VERSION` (injected by CMake from the environment variable of the same name, which `release.yml` / `android.yml` set to the git tag on tag pushes; empty on local builds, which never show the notice), the menu shows a clickable message at the top right that opens `https://github.com/JuanFunkin/BattleShipDX/releases`. Drafts and pre-releases are ignored by GitHub's `latest` endpoint. Not built on Android/UWP.
+
+## Update 19: host settings, abort reasons, load timeout
+
+- The match config (`T_CONFIG`) now carries the host's simulation-affecting settings (comp ruleset, neutral spawns, CPU level 9,
+  bonus stages, tap jump per player). While a match runs, `np_setting_override()` makes every peer use the host's values, so a
+  different local setting can no longer cause a desync. The unlock cheats are no longer part of the sync hash.
+- The reason a match ended (desync, lost connection, load timeout...) is shown on screen for 15 s and in Network → LAN Online /
+  Dev Tools → Netplay Debug.
+- Load timeout raised from 25 s to 60 s (phones load slower).
+
+### Troubleshooting: phone cannot join a PC host (but the PC can join the phone)
+
+That pattern is almost always the PC's firewall dropping the incoming UDP. On the PC that hosts, allow the port (7777 by default):
+
+```
+netsh advfirewall firewall add rule name="BattleShipDX UDP" dir=in action=allow protocol=UDP localport=7777
+```
+
+Also make sure Windows classifies the ZeroTier network as *Private*, or allow BattleShip.exe on both profiles in Windows Defender Firewall.

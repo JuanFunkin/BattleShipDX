@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include <cstdlib>
+#include <chrono>
 #include "netplay.h"
 #include "netplay_session.hpp"
 
@@ -77,7 +78,11 @@ static int sPanels = 1;
 void np_set_panels(int on) { sPanels = on ? 1 : 0; }
 int np_get_panels(void) { return sPanels; }
 
-int np_host_begin_match(const void *b, int n) { return S().HostBeginMatch(b, n) ? 1 : 0; }
+static uint32_t LocalSettingsBits();
+int np_host_begin_match(const void *b, int n) {
+    S().SetRoomSettings(LocalSettingsBits()); // the host's settings win for everybody during the match
+    return S().HostBeginMatch(b, n) ? 1 : 0;
+}
 int np_client_take_match(void *out, int cap) { return S().ClientTakeMatch(out, cap); }
 int np_match_active(void) { return S().MatchActive() ? 1 : 0; }
 int np_match_mask(void) { return S().MatchMask(); }
@@ -93,6 +98,23 @@ int port_enhancement_tap_jump_disabled(int player_index);
 int port_cheat_unlock_all_active(void);
 }
 
+// Simulation-affecting settings, packed: bit0 comp ruleset, 1 neutral spawns, 2 CPU lvl 9, 3 bonus stages, 4-7 tap jump off (P1-P4).
+// During an online match every peer uses the host's bits instead of its own CVars (np_setting_override), so a
+// different local setting can no longer cause a desync.
+static uint32_t LocalSettingsBits() {
+    uint32_t b = 0;
+    if (port_get_comp_ruleset()) b |= 1u << 0;
+    if (port_enhancement_neutral_spawns()) b |= 1u << 1;
+    if (port_enhancement_cpu_level_9()) b |= 1u << 2;
+    if (port_enhancement_bonus_stages_enabled()) b |= 1u << 3;
+    for (int i = 0; i < 4; i++) if (port_enhancement_tap_jump_disabled(i)) b |= 1u << (4 + i);
+    return b;
+}
+int np_setting_override(int bit, int local) {
+    if (!S().SettingsActive()) return local;
+    return (S().MatchSettings() >> bit) & 1u;
+}
+
 uint32_t np_settings_hash(void) {
     uint32_t h = 2166136261u;
     auto mix = [&](uint32_t v) { h ^= v; h *= 16777619u; };
@@ -100,14 +122,25 @@ uint32_t np_settings_hash(void) {
     mix((uint32_t)port_enhancement_neutral_spawns());
     mix((uint32_t)port_enhancement_cpu_level_9());
     mix((uint32_t)port_enhancement_bonus_stages_enabled());
-    mix((uint32_t)port_cheat_unlock_all_active());
     for (int i = 0; i < 4; i++) mix((uint32_t)port_enhancement_tap_jump_disabled(i));
     return h;
 }
 
 void np_end_match(void) { S().EndMatch(); }
 void np_submit_sync(uint32_t tick, uint32_t hash) { S().SubmitSync(tick, hash); }
-int np_consume_abort(void) { return S().ConsumeAbort(&sAbortReason) ? 1 : 0; }
+static std::string sLastAbort;
+static std::chrono::steady_clock::time_point sLastAbortAt;
+int np_consume_abort(void) {
+    if (!S().ConsumeAbort(&sAbortReason)) return 0;
+    sLastAbort = sAbortReason;
+    sLastAbortAt = std::chrono::steady_clock::now();
+    return 1;
+}
+const char *np_last_abort_reason(void) { return sLastAbort.c_str(); }
+int np_last_abort_age_ms(void) {
+    if (sLastAbort.empty()) return -1;
+    return (int)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - sLastAbortAt).count();
+}
 const char *np_abort_reason(void) { return sAbortReason.c_str(); }
 
 void np_put_input(int slot, uint32_t tick, uint16_t b, int8_t sx, int8_t sy) {

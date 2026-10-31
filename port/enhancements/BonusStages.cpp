@@ -13,8 +13,9 @@
 // selection, and reroutes a restored cursor back to page 0.
 constexpr const char* kBonusStagesCVar = "gEnhancements.BonusStagesEnabled";
 
+extern "C" int np_setting_override(int bit, int local);
 extern "C" int port_enhancement_bonus_stages_enabled(void) {
-    return CVarGetInteger(kBonusStagesCVar, 1) != 0;
+    return np_setting_override(3, CVarGetInteger(kBonusStagesCVar, 1) != 0) != 0;
 }
 
 namespace ssb64 {

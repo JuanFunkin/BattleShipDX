@@ -13,11 +13,12 @@ constexpr const char* kTapJumpCVars[PORT_ENHANCEMENT_MAX_PLAYERS] = {
 
 } // namespace
 
+extern "C" int np_setting_override(int bit, int local);
 extern "C" int port_enhancement_tap_jump_disabled(int playerIndex) {
     if (playerIndex < 0 || playerIndex >= PORT_ENHANCEMENT_MAX_PLAYERS) {
         return 0;
     }
-    return CVarGetInteger(kTapJumpCVars[playerIndex], 0) != 0;
+    return np_setting_override(4 + playerIndex, CVarGetInteger(kTapJumpCVars[playerIndex], 0) != 0) != 0;
 }
 
 namespace ssb64 {

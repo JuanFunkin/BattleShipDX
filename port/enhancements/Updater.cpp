@@ -476,10 +476,11 @@ void OpenReleasePage() {
 // ---------------------------------------------------------------------------
 // BattleShipDX release notice: tells the player (top right of the menu) that a newer release
 // exists on https://github.com/JuanFunkin/BattleShipDX/releases and opens that page on click.
-// Bump BATTLESHIPDX_VERSION below when you publish a release (it must match the release tag).
+// BATTLESHIPDX_VERSION is injected by CMake from the release tag (empty for local / branch builds, which then
+// never show the message).
 // ---------------------------------------------------------------------------
 #ifndef BATTLESHIPDX_VERSION
-#define BATTLESHIPDX_VERSION "v1.0.0"
+#define BATTLESHIPDX_VERSION ""
 #endif
 static constexpr const char* kDxLatestApi = "https://api.github.com/repos/JuanFunkin/BattleShipDX/releases/latest";
 static constexpr const char* kDxReleasesUrl = "https://github.com/JuanFunkin/BattleShipDX/releases";
@@ -499,6 +500,8 @@ static std::vector<int> ParseVersionNumbers(const std::string& v) {
 }
 
 static bool IsVersionNewer(const std::string& latest, const std::string& current) {
+    // Only clean release tags ("v1.2.3") count; anything else (empty, "dev", a hash) never shows the notice.
+    if (current.size() < 2 || current[0] != 'v' || current[1] < '0' || current[1] > '9') return false;
     const auto a = ParseVersionNumbers(latest);
     const auto b = ParseVersionNumbers(current);
     if (a.empty() || b.empty()) return false;
@@ -537,7 +540,7 @@ void CheckForDxReleaseAsync() {
 
 bool IsDxReleaseAvailable() { return s_dxNewer.load(); }
 std::string GetDxLatestTag() { std::lock_guard<std::mutex> lock(s_stringMutex); return s_dxLatestTag; }
-const char* GetDxVersion() { return BATTLESHIPDX_VERSION; }
+const char* GetDxVersion() { return BATTLESHIPDX_VERSION[0] ? BATTLESHIPDX_VERSION : "dev build"; }
 
 void OpenDxReleasesPage() {
 #if defined(_WIN32)

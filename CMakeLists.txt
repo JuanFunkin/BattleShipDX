@@ -66,6 +66,15 @@ if(NOT BATTLESHIP_VERSION)
 endif()
 message(STATUS "BattleShip updater version: ${BATTLESHIP_VERSION}")
 
+# BattleShipDX release notice: the version this build was released as. Release CI sets the
+# BATTLESHIPDX_VERSION environment variable to the git tag (only on tag pushes). Local / branch builds leave it
+# empty and simply never show the "new update" message. (git describe is NOT used here: forks inherit the
+# upstream project's tags, which would give the wrong answer.)
+if(NOT BATTLESHIPDX_VERSION AND DEFINED ENV{BATTLESHIPDX_VERSION})
+    set(BATTLESHIPDX_VERSION "$ENV{BATTLESHIPDX_VERSION}")
+endif()
+message(STATUS "BattleShipDX release version: '${BATTLESHIPDX_VERSION}'")
+
 # Pulled-in BEFORE the libultraship subdirectory so its
 # find_package(tinyxml2) sees our pkg-config-fallback shim. Required
 # for Ubuntu 22.04 jammy, where libtinyxml2-dev ships no CMake config.
@@ -693,6 +702,7 @@ set(SSB64_COMPILE_DEFS
 
     # Updater
     BATTLESHIP_CURRENT_VERSION=\"${BATTLESHIP_VERSION}\"
+    BATTLESHIPDX_VERSION=\"${BATTLESHIPDX_VERSION}\"
 
     # Asset-recipe fingerprint (see the computation above SSB64_COMPILE_DEFS)
     SSB64_ASSET_RECIPE_HASH=\"${SSB64_ASSET_RECIPE_HASH}\"

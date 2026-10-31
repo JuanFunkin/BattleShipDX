@@ -11,6 +11,7 @@ namespace ssb64 {
     } // namespace enhancements
 } // namespace ssb64
 
+extern "C" int np_setting_override(int bit, int local);
 extern "C" int port_enhancement_neutral_spawns(void) {
-    return CVarGetInteger(ssb64::enhancements::NeutralSpawnsCVarName(), 0) != 0;
+    return np_setting_override(1, CVarGetInteger(ssb64::enhancements::NeutralSpawnsCVarName(), 0) != 0) != 0;
 }

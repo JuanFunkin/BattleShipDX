@@ -22,6 +22,7 @@ Keep this list up to date: every new feature gets a line here.
 - **Host costume selector**, **name tags** above fighters, **connected-player panels** on the character select screen.
 - **Desync detection** (state hashes + `SSB64 NetSync` log lines) and syncing of the host's save data/settings so unlock differences don't desync 1P runs.
 - Local ports 2–4 are disabled while a room is open.
+- **Host settings win online**: during a match every player uses the host's comp-ruleset / neutral-spawns / CPU level / bonus-stage / tap-jump settings, so different local settings can't cause a desync. When a match is cancelled, the reason is shown on screen.
 - **Host-chosen stage** for VS Mode (or random), selectable before and while the room is open (Network → Match Options).
 - **Room cheats**: the host can enable infinite jumps / shield / stocks, 0% damage or CPU at 999% for *everyone* in the match; they turn off when the room closes.
 - Details and update log: [`docs/netplay.md`](docs/netplay.md).
@@ -39,7 +40,7 @@ Keep this list up to date: every new feature gets a line here.
 
 - Reorganised top bar: **Settings, Enhancements, Controls, Network, Dev Tools, About**. Mods live in Settings, Audio Editor and Cheats in Enhancements, input mapping in Controls, extraction/paths/diagnostics/netplay debug in Dev Tools, and a BattleShipDX About page with the original credits.
 - **Android** (arm64-v8a and armeabi-v7a APKs from the *Android (APK)* workflow) with online play over Tailscale or ZeroTier. See [`docs/android_battleshipdx.md`](docs/android_battleshipdx.md). Configurable touch controls (position, size, opacity, floating stick, jump button). Experimental.
-- **New-release notice**: when a newer release is published on GitHub, the menu shows a clickable message at the top right that opens the releases page. (When you publish a release, set `BATTLESHIPDX_VERSION` in `port/enhancements/Updater.cpp` to the same tag.)
+- **New-release notice**: when a newer release is published on GitHub, the menu shows a clickable message at the top right that opens the releases page. Release builds take their version from the git tag automatically (`release.yml` / `android.yml` on tag pushes); local builds never show it.
 - **Network → LAN Online / Match Options / How to Play**, laid out like the Ship of Harkinian menus.
 
 ### Mod and texture tooling
