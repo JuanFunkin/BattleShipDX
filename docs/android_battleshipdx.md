@@ -46,6 +46,7 @@ permission for this.
 
 - Hi-res texture packs and music packs: the in-app importer copies a `.zip` into the app's `mods` folder.
   A pack exported as `.o2r` is a zip file: rename it to `.zip` before importing.
+- Audio Editor: the **Import music** button opens the system file picker (.mp3, .ogg, .wav, or a .zip / .o2r music pack, several at once). Press **Rescan mods** afterwards.
 - Cheats, the Audio Editor and the Network menu work like on PC. The new-release notice and the script mods are
   desktop only.
 
@@ -57,3 +58,10 @@ permission for this.
   `-ffp-contract=off` to avoid ARM/x86 float differences, but this has not been tested. If a match reports a desync,
   please report which devices were involved. 32-bit ARM is the most likely to differ.
 - 32-bit phones have little RAM: keep hi-res packs small.
+
+## Comfort and speed (update 20)
+
+- Stick: bigger ring (72 dp), more sensitive by default (130%, up to 200%) and a smaller dead zone (6%), so full deflection
+  needs less thumb travel. Old stick settings are reset once; adjust in the edit panel (gear button).
+- 32-bit ARM: built with NEON and, on first launch, uses 480p (window aspect) rendering. If it is still slow, keep
+  MSAA at 1, Enhanced Framerate off, and no hi-res packs. Change the resolution in Settings (needs a restart).

@@ -390,7 +390,7 @@ public final class TouchOverlay {
             check(body, "Floating stick (appears where you touch)", sCfg.floating, (b, on) -> { sCfg.floating = on; sCfg.save(); relayoutAll(); });
             check(body, "Base follows your finger", sCfg.follow, (b, on) -> { sCfg.follow = on; sCfg.save(); });
             slider(body, "Dead zone", 0f, 0.4f, sCfg.deadzone, "%", v -> sCfg.deadzone = v, null);
-            slider(body, "Sensitivity", 0.6f, 1.6f, sCfg.sensitivity, "%", v -> sCfg.sensitivity = v, null);
+            slider(body, "Sensitivity", 0.6f, 2.0f, sCfg.sensitivity, "%", v -> sCfg.sensitivity = v, null);
 
             android.widget.LinearLayout row = new android.widget.LinearLayout(ctx);
             row.setOrientation(android.widget.LinearLayout.HORIZONTAL);

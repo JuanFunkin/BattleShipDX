@@ -57,7 +57,7 @@ public final class AnalogStickView extends View {
         selPaint.setPathEffect(new DashPathEffect(new float[] { 8f * density, 6f * density }, 0));
     }
 
-    private float radius() { return 62f * density * cfg.sizeScale * item.scale; }
+    private float radius() { return 72f * density * cfg.sizeScale * item.scale; }
     private float homeX() { return item.x * getWidth(); }
     private float homeY() { return item.y * getHeight(); }
 

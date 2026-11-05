@@ -782,6 +782,11 @@ static int PortInitImpl(int argc, char* argv[]) {
 		 *        fixed 320x240 framebuffer via VerticalResolutionToggle=1
 		 *        + VerticalPixelCount=240, factor selected by sub-key) */
 		if (cv->Get("gLowResModePending") == nullptr) {
+#if defined(__ANDROID__) && defined(__arm__)
+			/* BattleShipDX: 32-bit ARM phones are slow; first launch defaults to 480p
+			 * (window aspect) so they run smoothly. Changeable in Settings. */
+			cv->SetInteger("gLowResMode", 3);
+#endif
 			cv->SetInteger("gLowResModePending", cv->GetInteger("gLowResMode", 0));
 		}
 		const int32_t mode = cv->GetInteger("gLowResModePending", 0);

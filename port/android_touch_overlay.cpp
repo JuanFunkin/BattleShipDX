@@ -137,6 +137,27 @@ Java_com_jrickey_battleship_TouchOverlay_setAxis(
     SDL_JoystickSetVirtualAxis(sJoystick, axis, (Sint16)value);
 }
 
+// BattleShipDX Audio Editor: ask the Activity to open the system file picker for music files.
+void port_android_pick_music(void) {
+    JNIEnv *env = (JNIEnv *)SDL_AndroidGetJNIEnv();
+    jobject activity = (jobject)SDL_AndroidGetActivity();
+    if (env == nullptr || activity == nullptr) {
+        return;
+    }
+    jclass cls = env->GetObjectClass(activity);
+    jmethodID m = cls ? env->GetMethodID(cls, "pickMusic", "()V") : nullptr;
+    if (m != nullptr) {
+        env->CallVoidMethod(activity, m);
+    } else {
+        LOGW("pickMusic() not found on the activity");
+    }
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+    }
+    if (cls) env->DeleteLocalRef(cls);
+    env->DeleteLocalRef(activity);
+}
+
 // Menu toggle: set an atomic flag here on the Android UI thread; the
 // SDL_main thread's PortPushFrame drains it via port_drain_pending_menu_toggle()
 // (see port/gameloop.cpp) and calls libultraship's

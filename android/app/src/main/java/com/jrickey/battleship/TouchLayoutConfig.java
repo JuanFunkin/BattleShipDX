@@ -30,8 +30,8 @@ final class TouchLayoutConfig {
 
     float opacity = 0.70f;      // 0.15 .. 1.0
     float sizeScale = 1.0f;     // 0.6 .. 1.6 (all controls)
-    float deadzone = 0.08f;     // 0 .. 0.4
-    float sensitivity = 1.0f;   // 0.6 .. 1.6 (>1 reaches full deflection with less finger travel)
+    float deadzone = 0.06f;     // 0 .. 0.4
+    float sensitivity = 1.3f;   // 0.6 .. 2.0 (>1 reaches full deflection with less finger travel)
     boolean floating = true;    // the stick appears where you touch (left side of the screen)
     boolean follow = true;      // the stick base follows your finger when you drag past the ring
     boolean haptics = true;
@@ -50,10 +50,15 @@ final class TouchLayoutConfig {
 
     void load(Context ctx) {
         prefs = ctx.getSharedPreferences("ssb64_touch_layout", Context.MODE_PRIVATE);
+        // Layout v2: new, more comfortable stick defaults. Reset the stick tuning saved by older builds once.
+        if (prefs.getInt("layoutVersion", 1) < 2) {
+            prefs.edit().remove("deadzone").remove("sensitivity").remove(STICK + ".s")
+                 .putInt("layoutVersion", 2).apply();
+        }
         opacity = clamp(prefs.getFloat("opacity", opacity), 0.15f, 1f);
         sizeScale = clamp(prefs.getFloat("sizeScale", sizeScale), 0.6f, 1.6f);
         deadzone = clamp(prefs.getFloat("deadzone", deadzone), 0f, 0.4f);
-        sensitivity = clamp(prefs.getFloat("sensitivity", sensitivity), 0.6f, 1.6f);
+        sensitivity = clamp(prefs.getFloat("sensitivity", sensitivity), 0.6f, 2.0f);
         floating = prefs.getBoolean("floating", floating);
         follow = prefs.getBoolean("follow", follow);
         haptics = prefs.getBoolean("haptics", haptics);
@@ -79,7 +84,7 @@ final class TouchLayoutConfig {
     }
 
     void resetAll() {
-        opacity = 0.70f; sizeScale = 1f; deadzone = 0.08f; sensitivity = 1f;
+        opacity = 0.70f; sizeScale = 1f; deadzone = 0.06f; sensitivity = 1.3f;
         floating = true; follow = true; haptics = true;
         for (Item it : items.values()) { it.x = it.defX; it.y = it.defY; it.scale = 1f; it.visible = true; }
         save();

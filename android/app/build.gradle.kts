@@ -158,6 +158,8 @@ android {
                 arguments += listOf(
                     "-DUSE_AUTO_VCPKG=OFF",
                     "-DANDROID_STL=c++_shared",
+                    // 32-bit ARM: enable NEON (all phones since ~2012) for much faster math/vectorised code.
+                    "-DANDROID_ARM_NEON=ON",
                 )
                 // Targets we explicitly want AGP to drive a build for.
                 //   ssb64         — libmain.so (the Activity loads this)

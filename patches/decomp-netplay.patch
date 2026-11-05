@@ -105,6 +105,30 @@ index 22c73a1..8b22d1c 100644
      if (!(this_fp->is_control_disable))
      {
          this_fp->status_total_tics++;
+diff --git a/src/ft/ftphysics.c b/src/ft/ftphysics.c
+index 9b7b5ac..95682b1 100644
+--- a/src/ft/ftphysics.c
++++ b/src/ft/ftphysics.c
+@@ -1,4 +1,10 @@
+ #include <ft/fighter.h>
++#ifdef PORT
++/* BattleShipDX: use the SGI polynomial on every platform (MSVC would otherwise call the host libm and diverge online) */
++extern f32 __cosf(f32);
++extern f32 __sinf(f32);
++#endif
++
+ 
+ // 0x800D87D0
+ void ftPhysicsSetGroundVelTransferAir(GObj *fighter_gobj)
+@@ -427,7 +433,7 @@ void ftPhysicsGetAirVelTransN(FTStruct *fp, f32 *z, f32 *y, f32 *x) // Ness / Yo
+     {
+     f32 anim_vel_z = (transn_joint->translate.vec.f.z - fp->anim_vel.z) * fp->lr * topn_joint->scale.vec.f.z;
+     f32 anim_vel_y = (transn_joint->translate.vec.f.y - fp->anim_vel.y) * topn_joint->scale.vec.f.y;
+-    f32 cos = cosf(transn_joint->rotate.vec.f.z);
++    f32 cos = __cosf(transn_joint->rotate.vec.f.z);
+     f32 sin = __sinf(transn_joint->rotate.vec.f.z);
+ 
+     if (z != NULL)
 diff --git a/src/gm/gmcamera.c b/src/gm/gmcamera.c
 index c225d29..f447fb6 100644
 --- a/src/gm/gmcamera.c
@@ -170,6 +194,32 @@ index 262fdc3..023780f 100644
              }
          }
      }
+diff --git a/src/lb/lbcommon.c b/src/lb/lbcommon.c
+index 2c2bef5..dfd5e4c 100644
+--- a/src/lb/lbcommon.c
++++ b/src/lb/lbcommon.c
+@@ -5,6 +5,12 @@
+ #include <sys/objanim.h>
+ #include <sc/scmanager.h>
+ #include <sys/debug.h>
++#ifdef PORT
++/* BattleShipDX: use the SGI polynomial on every platform (MSVC would otherwise call the host libm and diverge online) */
++extern f32 __cosf(f32);
++extern f32 __sinf(f32);
++#endif
++
+ extern void func_800267F4_273F4(void *arg0);
+ 
+ #ifdef PORT
+@@ -484,7 +490,7 @@ sb32 lbCommonCheckAdjustSim2D(Vec3f *a, Vec3f *b, f32 angle)
+ 
+     if (similarity <= 0.0F)
+     {
+-        if (similarity >= cosf(angle + F_CST_DTOR32(90.0F)))
++        if (similarity >= __cosf(angle + F_CST_DTOR32(90.0F)))
+         {
+             orientation = b->x * a->y - b->y * a->x;
+             
 diff --git a/src/mn/mn1pmode/mn1pmode.c b/src/mn/mn1pmode/mn1pmode.c
 index b878ef9..52a2f7b 100644
 --- a/src/mn/mn1pmode/mn1pmode.c
@@ -2084,3 +2134,68 @@ index b3ea175..1f64249 100644
  	syControllerSetAutoRead((syControllerScheduleRead != sSYTaskmanFuncController) ? TRUE : FALSE);
  
  	dSYTaskmanUpdateCount = dSYTaskmanFrameCount = 0;
+diff --git a/src/sys/vector.c b/src/sys/vector.c
+index 9a25bcf..b94bc1e 100644
+--- a/src/sys/vector.c
++++ b/src/sys/vector.c
+@@ -2,6 +2,12 @@
+ #include "macros.h"
+ #include <PR/gu.h>
+ #include <sys/utils.h>
++#ifdef PORT
++/* BattleShipDX: use the SGI polynomial on every platform (MSVC would otherwise call the host libm and diverge online) */
++extern f32 __cosf(f32);
++extern f32 __sinf(f32);
++#endif
++
+ 
+ f32 syVectorNorm3D(Vec3f *dst)
+ {
+@@ -127,8 +133,8 @@ f32 syVectorAngleDiff3D(Vec3f *a, Vec3f *b)
+ Vec3f* syVectorRotate3D(Vec3f *dst, s32 axis, f32 angle)
+ {
+     f32 x, y, z;
+-    f32 sin = sinf(angle);
+-    f32 cos = cosf(angle);
++    f32 sin = __sinf(angle);
++    f32 cos = __cosf(angle);
+ 
+     switch (axis)
+     {
+@@ -180,8 +186,8 @@ Vec3f* syVectorRotateAbout3D(Vec3f *dst, Vec3f *dir, f32 angle)
+     f32 rot_z;
+ 
+     mag_yz = sqrtf(SQUARE(dir->y) + SQUARE(dir->z));
+-    sin = sinf(angle);
+-    cos = cosf(angle);
++    sin = __sinf(angle);
++    cos = __cosf(angle);
+ 
+     if (mag_yz != 0.0F)
+     {
+diff --git a/src/wp/wppikachu/wppikachuthunderjolt.c b/src/wp/wppikachu/wppikachuthunderjolt.c
+index 958d618..2f5ef38 100644
+--- a/src/wp/wppikachu/wppikachuthunderjolt.c
++++ b/src/wp/wppikachu/wppikachuthunderjolt.c
+@@ -1,6 +1,12 @@
+ #include <wp/weapon.h>
+ #include <ft/fighter.h>
+ #include <reloc_data.h>
++#ifdef PORT
++/* BattleShipDX: use the SGI polynomial on every platform (MSVC would otherwise call the host libm and diverge online) */
++extern f32 __cosf(f32);
++extern f32 __sinf(f32);
++#endif
++
+ 
+ // // // // // // // // // // // //
+ //                               //
+@@ -212,7 +218,7 @@ sb32 wpPikachuThunderJoltGroundProcUpdate(GObj *weapon_gobj)
+         efManagerDustExpandSmallMakeEffect(&DObjGetStruct(weapon_gobj)->translate.vec.f, 1.0F);
+         return TRUE;
+     }
+-    wp->physics.vel_air.x = cosf(DObjGetStruct(weapon_gobj)->rotate.vec.f.z) * WPPIKACHUJOLT_VEL;
++    wp->physics.vel_air.x = __cosf(DObjGetStruct(weapon_gobj)->rotate.vec.f.z) * WPPIKACHUJOLT_VEL;
+     wp->physics.vel_air.y = __sinf(DObjGetStruct(weapon_gobj)->rotate.vec.f.z) * WPPIKACHUJOLT_VEL;
+ 
+     switch (wp->weapon_vars.thunder_jolt.line_type)

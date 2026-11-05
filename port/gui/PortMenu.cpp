@@ -1576,6 +1576,8 @@ static void DoHotReload() {
 }
 
 // Audio Editor: pick which music file plays for each in-game track (like SoH's audio editor).
+#endif // !DISABLE_SCRIPTING (script mods)
+
 // Music files come from mods/ (loose `music/` folder or any .zip/.o2r with `music/*.mp3|ogg|wav`).
 static const char* const kBgmNames[] = {
     "Dream Land", "Planet Zebes", "Mushroom Kingdom", "Mushroom Kingdom (hurry)", "Sector Z", "Kongo Jungle",
@@ -1588,6 +1590,10 @@ static const char* const kBgmNames[] = {
     "Secret Found", "Challenger Approaching", "Training Mode", "Character Data / VS Records", "Main Menu",
     "Hammer", "Star",
 };
+
+#if defined(__ANDROID__)
+extern "C" void port_android_pick_music(void);
+#endif
 
 void PortMenu::AddMenuAudioEditor() {
     WidgetPath path = { "Enhancements", "Audio Editor", SECTION_COLUMN_1 };
@@ -1603,6 +1609,12 @@ void PortMenu::AddMenuAudioEditor() {
             if (ImGui::Button("Rescan mods")) {
                 portMusicRescan();
             }
+#if defined(__ANDROID__)
+            ImGui::SameLine();
+            if (ImGui::Button("Import music")) {
+                port_android_pick_music();
+            }
+#endif
             const int n = portMusicTrackCount();
             ImGui::TextDisabled("%d music file(s) found in mods/ (music/*.mp3, .ogg, .wav; also inside .zip / .o2r)", n);
             if (n == 0) {
@@ -1662,6 +1674,8 @@ void PortMenu::AddMenuAudioEditor() {
             }
         });
 }
+
+#ifndef DISABLE_SCRIPTING
 
 void PortMenu::AddMenuMods() {
     WidgetPath path = { "Settings", "Script Mods", SECTION_COLUMN_1 };
@@ -2283,8 +2297,8 @@ void PortMenu::AddMenuElements() {
     AddMenuAssets();
 #ifndef DISABLE_SCRIPTING
     AddMenuMods();
-    AddMenuAudioEditor();
 #endif
+    AddMenuAudioEditor();
     AddMenuDevTools();
     AddMenuAbout();
 

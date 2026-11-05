@@ -1,10 +1,16 @@
 package com.jrickey.battleship;
 
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.libsdl.app.SDLActivity;
 
@@ -27,6 +33,45 @@ import org.libsdl.app.SDLActivity;
  * plumbing is handled by SDLActivity itself.
  */
 public class BattleShipActivity extends SDLActivity {
+
+    private static final int REQ_PICK_MUSIC = 7301;
+
+    /** Called from the native Audio Editor ("Import music"): opens the system file picker. */
+    @SuppressWarnings("unused")
+    public void pickMusic() {
+        runOnUiThread(() -> {
+            try {
+                Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("*/*");
+                i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                startActivityForResult(i, REQ_PICK_MUSIC);
+            } catch (Exception e) {
+                Log.e("ssb64.music", "picker failed", e);
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQ_PICK_MUSIC || resultCode != RESULT_OK || data == null) return;
+        final List<Uri> uris = new ArrayList<>();
+        if (data.getClipData() != null) {
+            for (int k = 0; k < data.getClipData().getItemCount(); k++) uris.add(data.getClipData().getItemAt(k).getUri());
+        } else if (data.getData() != null) {
+            uris.add(data.getData());
+        }
+        if (uris.isEmpty()) return;
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            final int n = MusicImporter.importAll(app, uris);
+            runOnUiThread(() -> Toast.makeText(app,
+                n > 0 ? "Imported " + n + " music file(s). Press \"Rescan\" in the Audio Editor."
+                      : "Nothing imported (use .mp3, .ogg, .wav, or a .zip / .o2r music pack).",
+                Toast.LENGTH_LONG).show());
+        }, "ssb64-music-import").start();
+    }
 
     @Override
     protected String[] getLibraries() {
