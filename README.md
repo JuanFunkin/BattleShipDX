@@ -122,6 +122,7 @@ Everything below is toggleable in-game from the ESC menu.
 
 ### Textures & mods
 
+- **First-run resolution picker** (240p, 360p, 480p, 720p, 1080p) on PC and Android; shown the first time you open the game or after deleting the config file, changeable later in Settings.
 - **Hi-res texture packs** on desktop *and* Android (opt-in, read in place straight out of a `.zip`). Download GhostlyDark's pack from [evilgames.eu](https://evilgames.eu/texture-packs/ssb-reloaded.htm#pc).
 - **Native C mod support** — write mods in C, compiled at runtime (TinyCC), with hot-reload, function detours, and a documented engine/fighter event catalog. See [`docs/modding.md`](docs/modding.md). *(Desktop only; scripting is disabled on Android.)*
 

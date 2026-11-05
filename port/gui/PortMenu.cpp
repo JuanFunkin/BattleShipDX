@@ -2531,10 +2531,49 @@ static void DrawNetplayNotice() {
     ImGui::End();
 }
 
+// First-run resolution picker (also shown again if the config file is deleted).
+static void DrawFirstRunResolution() {
+    if (CVarGetInteger("gDxResPicked", 0) != 0) return;
+    ImGuiIO& io = ImGui::GetIO();
+    const float winH = io.DisplaySize.y * (io.DisplayFramebufferScale.y > 0.0f ? io.DisplayFramebufferScale.y : 1.0f);
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(vp->Pos.x + vp->Size.x * 0.5f, vp->Pos.y + vp->Size.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowBgAlpha(0.95f);
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize |
+                                   ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove |
+                                   ImGuiWindowFlags_NoResize;
+    if (ImGui::Begin("Welcome to BattleShipDX - choose a resolution", nullptr, flags)) {
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 26.0f);
+        ImGui::TextUnformatted("Pick the starting resolution. Lower is faster on slow phones and old PCs; higher looks sharper.");
+        ImGui::TextUnformatted("You can change it later in Settings (Internal Resolution).");
+        ImGui::PopTextWrapPos();
+        ImGui::Spacing();
+        static const int kRes[] = { 240, 360, 480, 720, 1080 };
+        for (int h : kRes) {
+            char label[32];
+            snprintf(label, sizeof(label), "%dp", h);
+            if (ImGui::Button(label, ImVec2(ImGui::GetFontSize() * 6.0f, 0.0f))) {
+                float mult = winH > 0.0f ? (float)h / winH : 1.0f;
+                mult = (std::max)(0.2f, (std::min)(2.0f, mult));
+                CVarSetFloat(CVAR_INTERNAL_RESOLUTION, mult);
+                CVarSetInteger("gLowResModePending", 0);
+                CVarSetInteger("gLowResMode", 0);
+                CVarSetInteger("gDxResPicked", 1);
+                CVarSave();
+                Ship::Context::GetInstance()->GetWindow()->SetResolutionMultiplier(mult);
+            }
+            ImGui::SameLine();
+        }
+        ImGui::NewLine();
+    }
+    ImGui::End();
+}
+
 void PortMenu::Draw() {
     Ship::Menu::Draw();
     DrawNetplayNameTags();
     DrawNetplayNotice();
+    DrawFirstRunResolution();
 }
 
 void PortMenu::DrawElement() {
