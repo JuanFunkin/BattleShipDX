@@ -1,3 +1,5 @@
+[netplay.md](https://github.com/user-attachments/files/34506356/netplay.md)
+
 # Multijugador online / LAN (hasta 4 jugadores)
 
 Funciona por UDP, sirve para red local y para Radmin VPN (o cualquier VPN/IP directa).
@@ -142,3 +144,10 @@ netsh advfirewall firewall add rule name="BattleShipDX UDP" dir=in action=allow 
 ```
 
 Also make sure Windows classifies the ZeroTier network as *Private*, or allow BattleShip.exe on both profiles in Windows Defender Firewall.
+
+## Desync messages (update 22)
+
+"Desync detected at tick N (differs: ...)" now says which part of the game state diverged first: settings/stage/timer,
+stocks, positions or damage/status. Both players must run the **same update** (the Online panel shows the build and the
+online protocol number; they must match). A PC build and an Android build from different updates will desync after a few
+seconds even when the lobby connects.
