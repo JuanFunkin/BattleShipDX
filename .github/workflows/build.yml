@@ -17,9 +17,6 @@ name: Build
 # build and let CMake run them as build dependencies.
 
 on:
-  pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:    # manual trigger for smoke-testing
 
 permissions:
