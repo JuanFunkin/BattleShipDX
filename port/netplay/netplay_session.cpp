@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "netplay_session.hpp"
+#include "netplay.h"
 
 #include <algorithm>
 #include <chrono>
@@ -41,7 +42,7 @@ namespace ssb64net {
 namespace {
 
 constexpr uint32_t kMagic = 0x4E505342; // "BSPN"
-constexpr uint8_t kVersion = 2;
+constexpr uint8_t kVersion = NP_PROTOCOL_VERSION; // 3: sync packets carry component hashes; trig/sim determinism changes
 
 enum Type : uint8_t {
     T_HELLO = 1, T_WELCOME, T_REJECT, T_ROSTER, T_CHOICE, T_LEAVE,
@@ -138,7 +139,7 @@ struct Session::Impl {
     bool aborted = false;
     std::string abortReason;
     uint32_t rng = 12345;
-    struct SyncCell { uint32_t tick = 0, hash = 0; bool valid = false; };
+    struct SyncCell { uint32_t tick = 0, hash = 0, detail = 0; bool valid = false; };
     SyncCell hostSync[64];
     SyncCell peerSync[kMaxSlots][64];
     int abortSends = 0;
@@ -445,12 +446,12 @@ void Session::Poll() {
                     EndMatch();
                 }
             } else if (type == T_SYNC && mMatchActive) {
-                uint32_t id = r.u32(), tk = r.u32(), hs = r.u32();
+                uint32_t id = r.u32(), tk = r.u32(), hs = r.u32(), dt = r.u32();
                 if (!r.bad && id == d->matchId) {
                     Impl::SyncCell& pc = d->peerSync[slot][tk & 63];
-                    pc.tick = tk; pc.hash = hs; pc.valid = true;
+                    pc.tick = tk; pc.hash = hs; pc.detail = dt; pc.valid = true;
                     const Impl::SyncCell& hc = d->hostSync[tk & 63];
-                    if (hc.valid && hc.tick == tk && hc.hash != hs) ReportDesync(tk);
+                    if (hc.valid && hc.tick == tk && hc.hash != hs) ReportDesync(tk, hc.detail, dt);
                 }
             } else if (type == T_CONFIG_ACK) {
                 if ((uint32_t)r.u32() == d->matchId) p.configAcked = true;
@@ -641,27 +642,35 @@ void Session::Poll() {
     }
 }
 
-void Session::ReportDesync(uint32_t tick) {
+void Session::ReportDesync(uint32_t tick, uint32_t mine, uint32_t theirs) {
     if (d->aborted || !mMatchActive) return;
-    char b[96];
-    snprintf(b, sizeof(b), "Desync detected at tick %u. Both players need the same build and the same enhancement settings.", tick);
+    const uint32_t diff = mine ^ theirs;
+    std::string what;
+    auto add = [&what](const char* n) { if (!what.empty()) what += ", "; what += n; };
+    if (diff & 0x000000FFu) add("settings/stage/timer");
+    if (diff & 0x0000FF00u) add("stocks");
+    if (diff & 0x00FF0000u) add("positions");
+    if (diff & 0xFF000000u) add("damage/status");
+    if (what.empty()) what = "unknown";
+    char b[256];
+    snprintf(b, sizeof(b), "Desync detected at tick %u (differs: %s). Both players need the exact same build (same update) and the same enhancement settings.", tick, what.c_str());
     d->aborted = true; d->abortReason = b;
     d->abortSends = 10; d->lastAbortSend = 0;
     EndMatch();
 }
 
-void Session::SubmitSync(uint32_t tick, uint32_t hash) {
+void Session::SubmitSync(uint32_t tick, uint32_t hash, uint32_t detail) {
     if (!mMatchActive) return;
     if (mState == State::Hosting) {
         Impl::SyncCell& hc = d->hostSync[tick & 63];
-        hc.tick = tick; hc.hash = hash; hc.valid = true;
+        hc.tick = tick; hc.hash = hash; hc.detail = detail; hc.valid = true;
         for (int s = 1; s < kMaxSlots; s++) {
             if (!d->peers[s].used || !(mMatchMask & (1 << s))) continue;
             const Impl::SyncCell& pc = d->peerSync[s][tick & 63];
-            if (pc.valid && pc.tick == tick && pc.hash != hash) { ReportDesync(tick); return; }
+            if (pc.valid && pc.tick == tick && pc.hash != hash) { ReportDesync(tick, detail, pc.detail); return; }
         }
     } else if (mState == State::Connected) {
-        Writer w; header(w, T_SYNC, mSlot); w.u32(d->matchId); w.u32(tick); w.u32(hash);
+        Writer w; header(w, T_SYNC, mSlot); w.u32(d->matchId); w.u32(tick); w.u32(hash); w.u32(detail);
         sendRaw(this, d->sock, d->hostAddr, w, packetsSent);
         sendRaw(this, d->sock, d->hostAddr, w, packetsSent); // twice: UDP may drop one
     }

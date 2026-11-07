@@ -127,7 +127,7 @@ uint32_t np_settings_hash(void) {
 }
 
 void np_end_match(void) { S().EndMatch(); }
-void np_submit_sync(uint32_t tick, uint32_t hash) { S().SubmitSync(tick, hash); }
+void np_submit_sync(uint32_t tick, uint32_t hash, uint32_t detail) { S().SubmitSync(tick, hash, detail); }
 static std::string sLastAbort;
 static std::chrono::steady_clock::time_point sLastAbortAt;
 int np_consume_abort(void) {

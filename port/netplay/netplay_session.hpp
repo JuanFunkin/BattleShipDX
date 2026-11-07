@@ -93,8 +93,8 @@ class Session {
     bool StartReleased() const { return mReleased; }
     void EndMatch();                // keeps relaying inputs briefly
     bool ConsumeAbort(std::string* reason);
-    void SubmitSync(uint32_t tick, uint32_t hash);   // state hash for desync detection (host compares)
-    void ReportDesync(uint32_t tick);
+    void SubmitSync(uint32_t tick, uint32_t hash, uint32_t detail);   // state hash for desync detection (host compares)
+    void ReportDesync(uint32_t tick, uint32_t mine, uint32_t theirs);
 
     // ---- inputs ------------------------------------------------------------
     void PutInput(int slot, uint32_t tick, InputFrame f);   // local or remote

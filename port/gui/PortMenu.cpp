@@ -1943,6 +1943,8 @@ void RenderLanOnline(WidgetInfo&) {
     const int state = np_state();
     const bool idle = (state == NP_IDLE || state == NP_FAILED);
 
+    ImGui::TextDisabled("Build: %s | online protocol v%d (both players must show the same protocol)",
+                        ssb64::enhancements::GetDxVersion(), (int)NP_PROTOCOL_VERSION);
     if (np_last_abort_age_ms() >= 0) {
         ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.4f, 1.0f), "Last online match ended: %s", np_last_abort_reason());
     }
