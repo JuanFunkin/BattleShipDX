@@ -11,8 +11,6 @@ name: Netplay Windows build
 # Run it from the "Actions" tab ("Run workflow") or by pushing to main.
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
